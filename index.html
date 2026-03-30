@@ -159,12 +159,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
 
 /* JULIO hidden */
 .hotspot{position:absolute;cursor:pointer;z-index:12;
-  animation:wig 5s ease-in-out infinite}
+  animation:wig 4s ease-in-out infinite, julioGlow 2s ease-in-out infinite}
 .hotspot:active{transform:scale(1.5)!important}
+@keyframes julioGlow{
+  0%,100%{filter:drop-shadow(0 0 0px rgba(255,200,0,0))}
+  50%{filter:drop-shadow(0 0 8px rgba(255,200,0,0.6))}
+}
 @keyframes wig{0%,93%,100%{transform:rotate(0)}
   94%{transform:rotate(-6deg)}95%{transform:rotate(6deg)}
   96%{transform:rotate(-4deg)}97%{transform:rotate(3deg)}}
-.julio-tiny{object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7)) brightness(.85)}
+.julio-tiny{object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)) brightness(1.0)}
 
 /* TREASURE */
 .treasure{position:absolute;cursor:pointer;z-index:12;font-size:2.2rem;
@@ -184,7 +188,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
   gap:3px;
   cursor:pointer;
   /* transition for push animation */
-  transition:transform .25s cubic-bezier(.34,1.56,.64,1), left .25s ease, top .25s ease;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1), left .2s ease, top .2s ease;
   user-select:none;
 }
 /* José Mari: centro izquierda, 45% altura */
@@ -192,15 +196,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
 /* Asdín: centro horizontal, parte baja */
 #npc-as{ left:50%; bottom:10%; transform:translateX(-50%); }
 
-/* Push states — slide away from center */
-#npc-jm.pushed{ transform:translateY(-50%) translateX(-90px) rotate(-15deg); }
-#npc-as.pushed{ transform:translateX(-50%) translateY(80px) rotate(8deg); }
+/* Push states — slide away dramatically */
+#npc-jm.pushed{ transform:translateY(-50%) translateX(-130px) rotate(-25deg) scale(.85) !important; }
+#npc-as.pushed{ transform:translateX(-50%) translateY(110px) rotate(12deg) scale(.85) !important; }
 
 .npc-img{
-  width:62px;height:78px;object-fit:cover;object-position:top;
+  width:68px;height:85px;object-fit:cover;object-position:top;
   border-radius:50% 50% 40% 40%;
   box-shadow:0 4px 16px rgba(0,0,0,.6);
   transition:box-shadow .2s, transform .15s;
+  cursor:pointer;
+  /* Larger tap target on mobile */
+  padding:4px;
+  margin:-4px;
 }
 #npc-jm .npc-img{border:3px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 12px rgba(255,215,0,.2)}
 #npc-as .npc-img{border:3px solid rgba(255,140,0,.6)}
@@ -379,7 +387,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
 <body>
 
 <!-- EXIT BUTTON — always visible -->
-<a class="btn-exit" href="https://www.bungalowsoasis.com" title="Volver a Bungalows Oasis">
+<a class="btn-exit" href="https://bungalowsoasis.com/" title="Volver a Bungalows Oasis">
   🏕️ Salir
 </a>
 
@@ -421,7 +429,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
       <div class="rank-title">🏆 Top Semanal</div>
       <div id="rk-list"></div>
     </div>
-    <a class="oasis-link" href="https://www.bungalowsoasis.com" target="_blank">
+    <a class="oasis-link" href="https://bungalowsoasis.com/" target="_blank">
       🌐 www.bungalowsoasis.com · Camping Oropesa del Mar</a>
   </div>
 </div>
@@ -543,7 +551,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
       <div class="rank-title">🏆 Top Semanal</div>
       <div id="rk-win"></div>
     </div>
-    <a class="oasis-link" href="https://www.bungalowsoasis.com" target="_blank">
+    <a class="oasis-link" href="https://bungalowsoasis.com/" target="_blank">
       🌐 bungalowsoasis.com · Camping Oropesa del Mar</a>
   </div>
 </div>
@@ -573,8 +581,8 @@ const I={
 /* ============================================================
    MUSIC SLOTS
    ============================================================ */
-const MUSIC_TITLE = null;  // new Audio('...') — waiting song
-const MUSIC_GAME  = null;  // new Audio('...') — game melody
+const MUSIC_TITLE = new Audio('/cancion_oasis.mpeg');
+const MUSIC_GAME  = new Audio('/cancion_oasis.mpeg');
 function playMusic(m){if(!m)return;try{m.loop=true;m.volume=.5;m.play();}catch(e){}}
 function stopMusic(m){if(!m)return;try{m.pause();m.currentTime=0;}catch(e){}}
 function stopAllMusic(){[MUSIC_TITLE,MUSIC_GAME].forEach(stopMusic);}
@@ -588,8 +596,8 @@ const ZONES=[
           {x:28,y:72,sz:22},{x:80,y:67,sz:20},{x:52,y:76,sz:18}],
    treasure:{x:72,y:35}},
   {id:'asador',name:'🔥 Zona del Asador',bg:'asador',
-   spots:[{x:18,y:54,sz:20},{x:62,y:46,sz:18},{x:78,y:64,sz:22},
-          {x:34,y:70,sz:20},{x:88,y:44,sz:18}],
+   spots:[{x:22,y:48,sz:26},{x:55,y:42,sz:24},{x:70,y:58,sz:26},
+          {x:38,y:62,sz:24},{x:80,y:40,sz:24}],
    treasure:{x:28,y:33}},
   {id:'recreativos',name:'🎮 Sala Recreativos',bg:'recreativos',
    spots:[{x:24,y:50,sz:20},{x:58,y:57,sz:18},{x:74,y:43,sz:22},
@@ -843,11 +851,10 @@ function pushNPC(id, e){
       :'👨‍🍳 "¡Oye! ¡Que me caigo la pizza! 🍕" 😤',2500);
   }
 
-  // Auto-return after 2.5s
+  // Auto-return after 3.5s — enough time to tap Julio
   setTimeout(()=>{
-    el.classList.remove('pushed');
-    // Return to pushed-back position, not original
-  },2500);
+    if(!G.found) el.classList.remove('pushed');
+  },3500);
 }
 
 /* ============================================================
