@@ -383,6 +383,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
 .btn-exit:hover{background:rgba(92,45,10,.9);border-color:var(--gold);color:var(--gold);}
 
 </style>
+
+<!-- PWA — Añadir a pantalla inicio iOS/Android -->
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pollo Loco">
+<meta name="application-name" content="Pollo Loco">
+<meta name="theme-color" content="#FFD700">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="shortcut icon" href="/icon-192.png">
+
+<!-- PWA Service Worker registration -->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+
 </head>
 <body>
 
@@ -424,6 +448,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:"Nu
     <div class="prize-box">
       <p>🏆 <strong>Ranking semanal público.</strong> Los <strong>alojados en el camping</strong>
       con mejor puntuación reciben <strong>premio en animación</strong>. ¡Díselo al animador! 🎁</p>
+    </div>
+
+    <div style="background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);
+      border-radius:12px;padding:10px 14px;width:100%;text-align:center">
+      <p style="font-family:Boogaloo,cursive;font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.5">
+        📲 <strong style="color:rgba(255,215,0,.8)">Añade el juego a tu pantalla de inicio</strong><br>
+        <span style="font-size:.78rem">iOS: pulsa <strong>Compartir →</strong> "Añadir a inicio"<br>
+        Android: pulsa <strong>⋮ → Añadir a pantalla</strong></span>
+      </p>
     </div>
     <div class="rank-box">
       <div class="rank-title">🏆 Top Semanal</div>
@@ -581,11 +614,38 @@ const I={
 /* ============================================================
    MUSIC SLOTS
    ============================================================ */
-const MUSIC_TITLE = new Audio('/cancion_oasis.mpeg');
-const MUSIC_GAME  = new Audio('/cancion_oasis.mpeg');
-function playMusic(m){if(!m)return;try{m.loop=true;m.volume=.5;m.play();}catch(e){}}
-function stopMusic(m){if(!m)return;try{m.pause();m.currentTime=0;}catch(e){}}
-function stopAllMusic(){[MUSIC_TITLE,MUSIC_GAME].forEach(stopMusic);}
+// ============================================================
+// MUSIC — loaded on first user gesture to bypass autoplay policy
+// ============================================================
+let MUSIC_TITLE = null;
+let MUSIC_GAME  = null;
+let musicLoaded = false;
+
+function loadMusic(){
+  if(musicLoaded) return;
+  musicLoaded = true;
+  try {
+    MUSIC_TITLE = new Audio('/cancion_oasis.mpeg');
+    MUSIC_TITLE.loop = true;
+    MUSIC_TITLE.volume = 0.5;
+    // Game music — same file until tomorrow's melody arrives
+    MUSIC_GAME = new Audio('/cancion_oasis.mpeg');
+    MUSIC_GAME.loop = true;
+    MUSIC_GAME.volume = 0.5;
+  } catch(e){ console.log('Audio load error:', e); }
+}
+function playMusic(m){
+  if(!m) return;
+  try { m.currentTime=0; m.play().catch(e=>console.log('Play blocked:',e)); }
+  catch(e){}
+}
+function stopMusic(m){
+  if(!m) return;
+  try { m.pause(); m.currentTime=0; } catch(e){}
+}
+function stopAllMusic(){
+  [MUSIC_TITLE,MUSIC_GAME].forEach(stopMusic);
+}
 
 /* ============================================================
    ZONES
@@ -669,13 +729,20 @@ function sndCollect(){tone(880,.1,'sine',.18);setTimeout(()=>tone(1046,.14,'sine
 let bgL=null,bgI=0;
 const BGM=[330,0,392,440,0,392,330,294,0,330,392,440,494,440,0,330];
 function startBGM(){
-  if(MUSIC_GAME){playMusic(MUSIC_GAME);return;}
+  loadMusic();
+  stopMusic(MUSIC_TITLE);
+  if(MUSIC_GAME){ playMusic(MUSIC_GAME); return; }
   if(bgL)return;
   bgL=setInterval(()=>{if(BGM[bgI]>0)tone(BGM[bgI],.27,'triangle',.05);bgI=(bgI+1)%BGM.length;},380);
 }
 function stopBGM(){
-  if(MUSIC_GAME){stopMusic(MUSIC_GAME);return;}
-  if(bgL){clearInterval(bgL);bgL=null;bgI=0;}
+  if(MUSIC_GAME){ stopMusic(MUSIC_GAME); return; }
+  if(bgL){ clearInterval(bgL); bgL=null; bgI=0; }
+}
+function startTitleMusic(){
+  loadMusic();
+  stopAllMusic();
+  if(MUSIC_TITLE) playMusic(MUSIC_TITLE);
 }
 
 /* ============================================================
@@ -704,7 +771,7 @@ function chkReady(){
    START
    ============================================================ */
 function startGame(){
-  initAudio();stopAllMusic();
+  initAudio();loadMusic();stopAllMusic();
   G.name=document.getElementById('inp-name').value.trim()||'Aventurero';
   G.timer=BASE_T;G.totalAdded=0;G.score=0;G.jmIdx=0;
   G.treasureGot=false;G.found=false;
@@ -1142,11 +1209,14 @@ function winGame(){
   document.getElementById('wscore').textContent='⭐ '+G.score+' puntos';
   document.getElementById('wsdet').textContent=
     `Base 200 + tiempo ${G.timer*8}pts${G.treasureGot?' + cofre 💰 100pts':''}`;
-  saveRanking(ttl,G.score,G.av);renderRanking('rk-win');confetti();show('win');
+  saveRanking(ttl,G.score,G.av);renderRanking('rk-win');confetti();
+  startTitleMusic();
+  show('win');
 }
 function loseGame(){
   document.getElementById('lose-s').textContent=
     `¡Julio estaba en "${ZONES[G.julioZone].name}"! ¡Era demasiado listo esta vez! 🐔`;
+  startTitleMusic();
   show('lose');
 }
 
@@ -1161,7 +1231,7 @@ function resetGame(){
   document.getElementById('bub-jm').classList.remove('show');
   document.getElementById('bub-as').classList.remove('show');
   clearHeat();show('title');renderRanking('rk-list');
-  if(MUSIC_TITLE)playMusic(MUSIC_TITLE);
+  startTitleMusic();
 }
 
 /* ============================================================
@@ -1215,10 +1285,15 @@ function confetti(){
 /* ============================================================
    INIT
    ============================================================ */
-document.addEventListener('touchstart',()=>initAudio(),{once:true});
-document.addEventListener('click',()=>initAudio(),{once:true});
+// Start music on first user interaction
+function onFirstInteraction(){
+  initAudio();
+  loadMusic();
+  startTitleMusic();
+}
+document.addEventListener('touchstart', onFirstInteraction, {once:true});
+document.addEventListener('click', onFirstInteraction, {once:true});
 renderRanking('rk-list');
-if(MUSIC_TITLE)playMusic(MUSIC_TITLE);
 </script>
 </body>
 </html>
